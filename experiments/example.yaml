@@ -1,21 +1,24 @@
 dataset:
   script_path: ../datasets/ohio.py
-  xml_path: /media/john/SCHLIEP/OhioT1DM-training/591-ws-training.xml
+  xlsx_path: ../data/unprocessed_cgm_data.xlsx
+  sheet_pos: 0
+  patient_id: 3
   nb_past_steps: 6
   nb_future_steps: 6
+  max_length: 100
   train_fraction: 0.6
   valid_fraction: 0.2
   test_fraction: 0.2
-  scale: 0.01
+  scale: 0.0025
 model:
   script_path: ../models/basic_lstm_keras.py
   model_cfg:
-    nb_lstm_states: 128
+    nb_lstm_states: 512
 optimizer:
   script_path: ../optimizers/adam_keras.py
-  learning_rate: 0.00001
+  learning_rate: 0.0001
 loss_function:
-  script_path: ../loss_functions/nll_keras.py
+  script_path: ../loss_functions/mse_keras.py
 train:
   script_path: ../train/train_keras.py
   artifacts_path: ../artifacts/lstm_nl/

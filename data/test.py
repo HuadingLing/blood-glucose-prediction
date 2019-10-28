@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 def dataframe_to_supervised(df, nb_past_steps, nb_steps_in_future):
     xs = []
@@ -44,12 +45,8 @@ def sequence_to_supervised_all(data, nb_past_steps, nb_future_steps):
     return np.array(x), np.array(y)
 
 def series_to_segments(data, least_length, max_length):
-    #nan_index=np.argwhere(data!=data)
-    #segments_temp = np.split(data, nan_index.flatten())
     nan_index=np.argwhere(data!=data)
-    error_index=np.where(np.diff(data)>=40)[0]+1
-    break_index = np.sort(np.unique(np.concatenate((nan_index.flatten(),error_index.flatten()))))
-    segments_temp = np.split(data, break_index)
+    segments_temp = np.split(data, nan_index.flatten())
     segments_temp = [c[1:] for c in segments_temp]
     segments = []
     for c in segments_temp:
@@ -64,3 +61,48 @@ def series_to_segments(data, least_length, max_length):
         elif len(c) >= least_length:
             segments.append(c)
     return segments
+
+
+nb_past_steps=6
+nb_future_steps=6
+max_length=30
+unprocessed = pd.read_excel('unprocessed_cgm_data.xlsx', sheet_name=None)
+Sheet0 = unprocessed['Baseline']
+patient_id = 3 
+x_series = Sheet0.iloc[patient_id-1,7:]
+nd_glucose_level = x_series.values
+consecutive_segments=series_to_segments(nd_glucose_level, nb_past_steps+nb_future_steps, max_length)
+sups = [sequence_to_supervised(c, nb_past_steps, nb_future_steps) for
+            c in consecutive_segments]
+
+xss = [sup[0] for sup in sups] # list of array
+yss = [sup[1] for sup in sups]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

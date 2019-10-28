@@ -16,6 +16,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
 
 import numpy as np
 import metrics
+import visualization as vs
 
 def main(yaml_filepath, mode):
     """Example."""
@@ -37,12 +38,15 @@ def main(yaml_filepath, mode):
 
     # print("loading dataset ...")
     x_train, y_train, x_valid, y_valid, x_test, y_test = module_dataset.load_glucose_dataset(
-        xml_path = cfg['dataset']['xml_path'],
+        xlsx_path = cfg['dataset']['xlsx_path'],
         nb_past_steps   = int(cfg['dataset']['nb_past_steps']),
         nb_future_steps = int(cfg['dataset']['nb_future_steps']),
+        max_length = int(cfg['dataset']['max_length']),
         train_fraction  = float(cfg['dataset']['train_fraction']),
         valid_fraction  = float(cfg['dataset']['valid_fraction']),
-        test_fraction   = float(cfg['dataset']['test_fraction'])
+        test_fraction   = float(cfg['dataset']['test_fraction']),
+        sheet_pos = cfg['dataset']['sheet_pos'],
+        patient_id = int(cfg['dataset']['patient_id']),
     )
     # scale data
     scale = float(cfg['dataset']['scale'])
@@ -106,6 +110,7 @@ def main(yaml_filepath, mode):
             artifacts_path = cfg['train']['artifacts_path']
         )
 
+        '''
     # evaluation mode
     if mode == 'evaluate':
         model_path = os.path.join(cfg['train']['artifacts_path'], "model.hdf5")
@@ -114,21 +119,91 @@ def main(yaml_filepath, mode):
             model_path,
             custom_objects = {loss_function.__name__: loss_function}
         )
-        y_pred_last = model.predict(x_test)[:,-1].flatten()/scale
+        '''
+        
+        output_image_dir = "output_image/patient_"+str(cfg['dataset']['patient_id'])+"/"
+        if os.path.exists(output_image_dir) == False:
+            os.makedirs(output_image_dir)
+
+
+        save_file_name_prefix = output_image_dir + "sheet_" + str(cfg['dataset']['sheet_pos'])+"_lstm_states_"+str(cfg['model']['model_cfg']['nb_lstm_states'])+"_loss_function_"+loss_function.__name__+"_"
+        
+        #y_pred_last = model.predict(x_test)[:,-1].flatten()/scale
+        y_pred = model.predict(x_test)
+        
+        y_pred_last = y_pred[:,-1].flatten()/scale
         y_test_last = y_test[:,-1].flatten()/scale
         y_pred_t0_last = np.array([x[-1] for x in x_test])/scale
+        save_file_name = save_file_name_prefix + "test.png"
+        if loss_function.__name__ == 'tf_nll':
+            y_pred_var = y_pred[:,:1].flatten()/scale
+            vs.plot_with_std(y_test_last, y_pred_last, y_pred_var, coeffi = 1, 
+                             title="Prediction result",
+                             save_file_name = save_file_name)
+        else:
+            vs.plot_without_std(y_test_last, y_pred_last, 
+                                title="Prediction result",
+                                save_file_name = save_file_name)
+            
 
+        #y_pred_last = y_pred[:,-1].flatten()
+        #y_test_last = y_test[:,-1].flatten()
+        #y_pred_t0_last = np.array([x[-1] for x in x_test])
+        
         rmse = metrics.root_mean_squared_error(y_test_last, y_pred_last)
         with open(os.path.join(cfg['train']['artifacts_path'], "rmse.txt"), "w") as outfile:
             outfile.write("{}\n".format(rmse))
 
+        '''
         seg = metrics.surveillance_error(y_test_last, y_pred_last)
         with open(os.path.join(cfg['train']['artifacts_path'], "seg.txt"), "w") as outfile:
             outfile.write("{}\n".format(seg))
-
+        '''
+        
         t0_rmse = metrics.root_mean_squared_error(y_test_last, y_pred_t0_last)
         with open(os.path.join(cfg['train']['artifacts_path'], "t0_rmse.txt"), "w") as outfile:
             outfile.write("{}\n".format(t0_rmse))
+        
+        
+        # 后面这部分观察模型在训练集和验证集上的效果
+        x_test = x_train
+        y_test = y_train
+            
+        y_pred = model.predict(x_test)
+        
+        y_pred_last = y_pred[:,-1].flatten()/scale
+        y_test_last = y_test[:,-1].flatten()/scale
+        y_pred_t0_last = np.array([x[-1] for x in x_test])/scale
+        save_file_name = save_file_name_prefix + "train.png"
+        if loss_function.__name__ == 'tf_nll':
+            y_pred_var = y_pred[:,:1].flatten()/scale
+            vs.plot_with_std(y_test_last, y_pred_last, y_pred_var, coeffi = 1, 
+                             title="Prediction result on training set",
+                             save_file_name = save_file_name)
+        else:
+            vs.plot_without_std(y_test_last, y_pred_last, 
+                                title="Prediction result on training set", 
+                                save_file_name = save_file_name)
+            
+        
+        x_test = x_valid
+        y_test = y_valid
+            
+        y_pred = model.predict(x_test)
+        
+        y_pred_last = y_pred[:,-1].flatten()/scale
+        y_test_last = y_test[:,-1].flatten()/scale
+        y_pred_t0_last = np.array([x[-1] for x in x_test])/scale
+        save_file_name = save_file_name_prefix + "validation.png"
+        if loss_function.__name__ == 'tf_nll':
+            y_pred_var = y_pred[:,:1].flatten()/scale
+            vs.plot_with_std(y_test_last, y_pred_last, y_pred_var, coeffi = 1,
+                             title="Prediction result on validation set",
+                             save_file_name = save_file_name)
+        else:
+            vs.plot_without_std(y_test_last, y_pred_last,
+                                title="Prediction result on validation set",
+                                save_file_name = save_file_name)
 
 def load_module(script_path):
     spec = importlib.util.spec_from_file_location("module.name", script_path)
@@ -198,5 +273,9 @@ def get_parser():
 
 
 if __name__ == '__main__':
-    args = get_parser().parse_args()
-    main(args.filename, args.mode)
+    #args = get_parser().parse_args()
+    #main(args.filename, args.mode)
+    filenames = 'experiments/example.yaml'
+    mode = 'train'
+    #mode = 'evaluate'
+    main(filenames, mode)
