@@ -26,5 +26,6 @@ def train(model, x_train, y_train, x_valid, y_valid, batch_size, epochs,
                 period         = 10
             )
         ]
+        
     )
     return model

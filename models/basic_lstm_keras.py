@@ -12,6 +12,18 @@ def load(input_shape, output_shape, cfg):
         unit_forget_bias=True,
     ))
     model.add(tf.keras.layers.Dense(
-        units=output_shape
+        units=output_shape,
+    ))
+    return model
+
+def load_with_lstm_states(input_shape, output_shape, states):
+    model = tf.keras.models.Sequential()
+    model.add(tf.keras.layers.LSTM(
+        units=states,
+        input_shape=input_shape,
+        unit_forget_bias=True,
+    ))
+    model.add(tf.keras.layers.Dense(
+        units=output_shape,
     ))
     return model

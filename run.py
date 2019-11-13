@@ -91,7 +91,9 @@ def main(yaml_filepath, mode):
 
         model.compile(
             optimizer=optimizer,
+            #optimizer='adam',
             loss=loss_function
+            #loss='mean_squared_error'
         )
 
         print(model.summary())
@@ -204,6 +206,8 @@ def main(yaml_filepath, mode):
             vs.plot_without_std(y_test_last, y_pred_last,
                                 title="Prediction result on validation set",
                                 save_file_name = save_file_name)
+            
+        print(rmse)
 
 def load_module(script_path):
     spec = importlib.util.spec_from_file_location("module.name", script_path)

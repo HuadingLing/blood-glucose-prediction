@@ -47,7 +47,7 @@ def series_to_segments(data, least_length, max_length):
     #nan_index=np.argwhere(data!=data)
     #segments_temp = np.split(data, nan_index.flatten())
     nan_index=np.argwhere(data!=data)
-    error_index=np.where(np.diff(data)>=40)[0]+1
+    error_index=np.where(np.abs(np.diff(data))>=40)[0]+1
     break_index = np.sort(np.unique(np.concatenate((nan_index.flatten(),error_index.flatten()))))
     segments_temp = np.split(data, break_index)
     segments_temp = [c[1:] for c in segments_temp]

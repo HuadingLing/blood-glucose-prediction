@@ -2,8 +2,8 @@ dataset:
   script_path: ../datasets/ohio.py
   xlsx_path: ../data/unprocessed_cgm_data.xlsx
   sheet_pos: 0
-  patient_id: 3
-  nb_past_steps: 6
+  patient_id: 2
+  nb_past_steps: 12
   nb_future_steps: 6
   max_length: 100
   train_fraction: 0.6
@@ -13,7 +13,7 @@ dataset:
 model:
   script_path: ../models/basic_lstm_keras.py
   model_cfg:
-    nb_lstm_states: 512
+    nb_lstm_states: 64
 optimizer:
   script_path: ../optimizers/adam_keras.py
   learning_rate: 0.0001
@@ -22,8 +22,8 @@ loss_function:
 train:
   script_path: ../train/train_keras.py
   artifacts_path: ../artifacts/lstm_nl/
-  batch_size: 128
+  batch_size: 256
   epochs: 1000
-  patience: 8
+  patience: 256
   shuffle: True
   seed: 0

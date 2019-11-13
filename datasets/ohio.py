@@ -81,7 +81,7 @@ def split_data(xs, train_fraction, valid_fraction, test_fraction):
     nb_train = int(np.ceil(train_fraction*n))
     nb_valid = int(np.ceil(valid_fraction*n))
     i_end_train = nb_train
-    i_end_valid = nb_train+nb_valid
+    i_end_valid = nb_train + nb_valid
 
     return np.split(xs, [i_end_train, i_end_valid])
     # 三部分依次以测量时间顺序来拆分？竟不是随机拆分？

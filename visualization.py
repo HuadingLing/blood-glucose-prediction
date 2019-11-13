@@ -27,3 +27,16 @@ def plot_without_std(y_ture, y_pred, title=" ", save_file_name = " "):
     if save_file_name != " ":
         plt.savefig(save_file_name)
     plt.show()
+    
+def plot_mse(mse_result, LSTM_states, n_past, save_file_name = " "):
+    length = len(LSTM_states)
+    color = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
+    for i in range(len(n_past)):
+        plt.plot(LSTM_states,mse_result[i*length:(i+1)*length],color = color[i])
+    plt.legend(['past steps '+str(s) for s in n_past])
+    plt.xlabel('LSTM States')
+    plt.ylabel('RMSE')
+    if save_file_name != " ":
+        plt.savefig(save_file_name)
+    plt.show()
+    
