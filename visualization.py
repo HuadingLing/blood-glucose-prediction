@@ -13,6 +13,7 @@ def plot_with_std(y_ture, y_pred_mean, y_pred_std, coeffi = 3, title=" ", save_f
     plt.xlabel('time')
     plt.ylabel('glucose level')
     plt.title(title)
+    plt.grid()
     if save_file_name != " ":
         plt.savefig(save_file_name)
     plt.show()
@@ -24,11 +25,12 @@ def plot_without_std(y_ture, y_pred, title=" ", save_file_name = " "):
     plt.xlabel('time')
     plt.ylabel('glucose level')
     plt.title(title)
+    plt.grid()
     if save_file_name != " ":
         plt.savefig(save_file_name)
     plt.show()
     
-def plot_mse(mse_result, LSTM_states, n_past, save_file_name = " "):
+def plot_mse(mse_result, LSTM_states, n_past, title=" ", save_file_name = " "):
     length = len(LSTM_states)
     color = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
     for i in range(len(n_past)):
@@ -36,6 +38,8 @@ def plot_mse(mse_result, LSTM_states, n_past, save_file_name = " "):
     plt.legend(['past steps '+str(s) for s in n_past])
     plt.xlabel('LSTM States')
     plt.ylabel('RMSE')
+    plt.title(title)
+    plt.grid()
     if save_file_name != " ":
         plt.savefig(save_file_name)
     plt.show()

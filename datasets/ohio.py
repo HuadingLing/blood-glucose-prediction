@@ -4,8 +4,8 @@ import numpy as np
 import utils
 
 # 每个患者对应一个xml文件
-sheet = ["Baseline", "3M", "6M", "9M", "12M", "15M", "18M", "21M", "24M", "27M", "33M", "36M"]
-data_start_pos = [7, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+sheet = ["Baseline", "3M", "6M", "9M", "12M", "15M", "18M", "21M", "24M", "27M", "30M", "33M", "36M"]
+data_start_pos = [7, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
 
 def load_glucose_dataset(xlsx_path, nb_past_steps, nb_future_steps, train_fraction,
         valid_fraction, test_fraction, sheet_pos, patient_id, max_length):
