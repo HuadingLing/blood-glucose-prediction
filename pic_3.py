@@ -29,63 +29,52 @@ patient_num = 41
 sheet_num = 13
 
 batch_size = 256
-epochs = 100
-epochs_result=[]
-first_epochs = 1000
-max_epochs = 200
-min_epochs = 32
-
+epochs = 200
 
 past_steps = 12
 lstm_states = 128
 
-use_GRU = True
+
+use_nll = True
 
 #True_id = [5,9,11,12]
-#patient = [4, 8, 11, 13, 18]
-patient = [8, 11]
-
 rmse_list = []
-loss_1_train_pre = 0
-loss_1_valid_pre = 0
-loss_1_train = 0
-loss_1_valid = 0
-loss_2_train = 0
-loss_2_valid = 0
 
 def main(yaml_filepath, mode):
-    output_shape = 2
-    loss = tf_nll
-    loss_name = 'nll'
+    if use_nll == True:
+        output_shape = 2
+        loss = tf_nll
+        loss_name = 'nll'
+    else:
+        output_shape = 1
+        loss = 'mean_squared_error'
+        loss_name = 'mse'
+    
     id_list = []
-    for pid in patient:
+    
+    for pid in [4, 8, 11, 13, 18]:
         patient_true_id = true_id[pid-1]
         id_list.append(patient_true_id)
-        epochs_list=[first_epochs]
-        if use_GRU:
-            output_image_dir = "output_image/table/GRU_Incremental_Learning/patient_"+str(patient_true_id)+"/"
-        else:
-            output_image_dir = "output_image/table/LSTM_Incremental_Learning/patient_"+str(patient_true_id)+"/"
+        output_image_dir = "output_image/table/LSTM_all_sheet/patient_"+str(patient_true_id)+"/"
         if os.path.exists(output_image_dir) == False:
             os.makedirs(output_image_dir)
+            
+        x_train = np.array([])
+        y_train = np.array([])
         
         np.random.seed(seed)
 
         sequence_input = Input(shape=(past_steps, feature))
-        
-        if use_GRU:
-            lstm_feture_without_dropout = GRU(lstm_states)(sequence_input)
-        else:
-            lstm_feture_without_dropout = LSTM(lstm_states)(sequence_input)
-            
+        lstm_feture_without_dropout = LSTM(lstm_states)(sequence_input)
         lstm_feture = Dropout(0.1)(lstm_feture_without_dropout)
         pred_output = Dense(output_shape)(lstm_feture)
         predition_model = Model(inputs=sequence_input, outputs=pred_output)
         
         predition_model.compile(optimizer='adam', loss=loss)
         
+        
         for sheet in range(sheet_num - 1):
-            x_train, y_train, x_valid, y_valid, x_test, y_test = load_glucose_dataset(
+            x_train_temp, y_train_temp, x_valid, y_valid, x_test, y_test = load_glucose_dataset(
                     xlsx_path = xlsx_path,
                     nb_past_steps   = past_steps,
                     nb_future_steps = future_steps,
@@ -96,31 +85,15 @@ def main(yaml_filepath, mode):
                     sheet_pos = sheet,
                     patient_id = pid,
                     )
-            x_train *= scale
-            y_train *= scale
-            #x_valid *= scale
-            #y_valid *= scale
-            #x_test *= scale
-            #y_test *= scale
-            
-            
-            
             if sheet == 0:
-                epochs=epochs_list[0]
-            else:
-                loss_1_train = predition_model.evaluate(x_train, y_train, batch_size=batch_size)
-                if loss_1_train > 0:
-                    epochs = max_epochs
-                else:
-                    epochs = min_epochs
-                epochs_list.append(epochs)
+                x_train = x_train_temp
+                y_train = y_train_temp
+            else:    
+                x_train = np.concatenate((x_train, x_train_temp), axis=0)
+                y_train = np.concatenate((y_train, y_train_temp), axis=0)
             
-            predition_model.fit(x_train, y_train, 
-                                epochs=epochs,
-                                batch_size=batch_size
-                                )
         
-        x_train, y_train, x_valid, y_valid, x_test, y_test = load_glucose_dataset(
+        x_train_temp, y_train_temp, x_valid, y_valid, x_test, y_test = load_glucose_dataset(
                 xlsx_path = xlsx_path,
                 nb_past_steps   = past_steps,
                 nb_future_steps = future_steps,
@@ -131,21 +104,16 @@ def main(yaml_filepath, mode):
                 sheet_pos = sheet_num - 1,
                 patient_id = pid,
                 )
+        
+        x_train = np.concatenate((x_train, x_train_temp), axis=0)
+        y_train = np.concatenate((y_train, y_train_temp), axis=0)
+        
         x_train *= scale
         y_train *= scale
-        #x_valid *= scale
-        #y_valid *= scale
+        x_valid *= scale
+        y_valid *= scale
         x_test *= scale
         y_test *= scale
-        
-        loss_1_train = predition_model.evaluate(x_train, y_train, batch_size=batch_size)
-        if loss_1_train > 0:
-            epochs = max_epochs
-        else:
-            epochs = min_epochs
-        
-        epochs_list.append(epochs)
-        #epochs = epochs_temp
         
         predition_model.fit(x_train, y_train, 
                             epochs=epochs,
@@ -159,16 +127,20 @@ def main(yaml_filepath, mode):
         
         y_pred_last = y_pred[:,-1].flatten()/scale
         y_test_last = y_test[:,-1].flatten()/scale
-        save_file_name = save_file_name_prefix_1 + "test.pdf"
-        y_pred_var = y_pred[:,:1].flatten()/scale
-        vs.plot_with_std(y_test_last, y_pred_last, y_pred_var, coeffi = 1, 
-                         title="Prediction result",
-                         save_file_name = save_file_name)
+        save_file_name = save_file_name_prefix_1 + "test.png"
+        if use_nll == True:
+            y_pred_var = y_pred[:,:1].flatten()/scale
+            vs.plot_with_std(y_test_last, y_pred_last, y_pred_var, coeffi = 1, 
+                             title="Prediction result",
+                             save_file_name = save_file_name)
+        else:
+            vs.plot_without_std(y_test_last, y_pred_last, 
+                                title="Prediction result",
+                                save_file_name = save_file_name)
         
         rmse = metrics.root_mean_squared_error(y_test_last, y_pred_last)
         
         rmse_list.append(rmse)
-        epochs_result.append(epochs_list)
     
     print(id_list)
     print(rmse_list)

@@ -5,7 +5,7 @@ import yaml
 import importlib.util
 
 from keras.models import Model
-from keras.layers import Input, Dense, Dropout, LSTM
+from keras.layers import Input, Dense, Dropout, LSTM, GRU
 from datasets.ohio import load_glucose_dataset
 from loss_functions.nll_keras import tf_nll
 
@@ -34,8 +34,11 @@ epochs = 200
 past_steps = 12
 lstm_states = 128
 
+#patient = [4, 8, 11, 13, 18]
+patient = [8, 11]
 
-use_nll = True
+use_GRU = False
+use_nll = False
 
 #True_id = [5,9,11,12]
 rmse_list = []
@@ -52,10 +55,13 @@ def main(yaml_filepath, mode):
     
     id_list = []
     
-    for pid in [4, 8, 11, 13, 18]:
+    for pid in patient:
         patient_true_id = true_id[pid-1]
         id_list.append(patient_true_id)
-        output_image_dir = "output_image/table/LSTM_all_sheet/patient_"+str(patient_true_id)+"/"
+        if use_GRU:
+            output_image_dir = "output_image/table/GRU_all_sheet/patient_"+str(patient_true_id)+"/"
+        else:
+            output_image_dir = "output_image/table/LSTM_all_sheet/patient_"+str(patient_true_id)+"/"
         if os.path.exists(output_image_dir) == False:
             os.makedirs(output_image_dir)
             
@@ -65,7 +71,12 @@ def main(yaml_filepath, mode):
         np.random.seed(seed)
 
         sequence_input = Input(shape=(past_steps, feature))
-        lstm_feture_without_dropout = LSTM(lstm_states)(sequence_input)
+        
+        if use_GRU:
+            lstm_feture_without_dropout = GRU(lstm_states)(sequence_input)
+        else:
+            lstm_feture_without_dropout = LSTM(lstm_states)(sequence_input)
+            
         lstm_feture = Dropout(0.1)(lstm_feture_without_dropout)
         pred_output = Dense(output_shape)(lstm_feture)
         predition_model = Model(inputs=sequence_input, outputs=pred_output)
@@ -127,7 +138,7 @@ def main(yaml_filepath, mode):
         
         y_pred_last = y_pred[:,-1].flatten()/scale
         y_test_last = y_test[:,-1].flatten()/scale
-        save_file_name = save_file_name_prefix_1 + "test.png"
+        save_file_name = save_file_name_prefix_1 + "test.pdf"
         if use_nll == True:
             y_pred_var = y_pred[:,:1].flatten()/scale
             vs.plot_with_std(y_test_last, y_pred_last, y_pred_var, coeffi = 1, 

@@ -5,7 +5,7 @@ import yaml
 import importlib.util
 
 from keras.models import Model
-from keras.layers import Input, Dense, Dropout, LSTM
+from keras.layers import Input, Dense, Dropout, LSTM, GRU
 from datasets.ohio import load_glucose_dataset
 from loss_functions.nll_keras import tf_nll
 
@@ -39,11 +39,12 @@ min_epochs = 32
 past_steps = 12
 lstm_states = 128
 
-
-use_nll = True
+use_GRU = False
 
 
 #True_id = [5,9,11,12]
+#patient = [4, 8, 11, 13, 18]
+patient = [8, 11]
 
 rmse_list = []
 loss_1_train_pre = 0
@@ -54,20 +55,18 @@ loss_2_train = 0
 loss_2_valid = 0
 
 def main(yaml_filepath, mode):
-    if use_nll == True:
-        output_shape = 2
-        loss = tf_nll
-        loss_name = 'nll'
-    else:
-        output_shape = 1
-        loss = 'mean_squared_error'
-        loss_name = 'mse'
+    output_shape = 1
+    loss = 'mean_squared_error'
+    loss_name = 'mse'
     id_list = []
-    for pid in [4, 8, 11, 13, 18]:
+    for pid in patient:
         patient_true_id = true_id[pid-1]
         id_list.append(patient_true_id)
         epochs_list=[first_epochs]
-        output_image_dir = "output_image/table/LSTM_Incremental_Learning/patient_"+str(patient_true_id)+"/"
+        if use_GRU:
+            output_image_dir = "output_image/table/GRU_Incremental_Learning/patient_"+str(patient_true_id)+"/"
+        else:
+            output_image_dir = "output_image/table/LSTM_Incremental_Learning/patient_"+str(patient_true_id)+"/"
         if os.path.exists(output_image_dir) == False:
             os.makedirs(output_image_dir)
         
@@ -75,7 +74,11 @@ def main(yaml_filepath, mode):
 
         sequence_input = Input(shape=(past_steps, feature))
         
-        lstm_feture_without_dropout = LSTM(lstm_states)(sequence_input)
+        if use_GRU:
+            lstm_feture_without_dropout = GRU(lstm_states)(sequence_input)
+        else:
+            lstm_feture_without_dropout = LSTM(lstm_states)(sequence_input)
+            
         lstm_feture = Dropout(0.1)(lstm_feture_without_dropout)
         pred_output = Dense(output_shape)(lstm_feture)
         predition_model = Model(inputs=sequence_input, outputs=pred_output)
@@ -178,14 +181,8 @@ def main(yaml_filepath, mode):
         
         y_pred_last = y_pred[:,-1].flatten()/scale
         y_test_last = y_test[:,-1].flatten()/scale
-        save_file_name = save_file_name_prefix_1 + "test.png"
-        if use_nll == True:
-            y_pred_var = y_pred[:,:1].flatten()/scale
-            vs.plot_with_std(y_test_last, y_pred_last, y_pred_var, coeffi = 1, 
-                             title="Prediction result",
-                             save_file_name = save_file_name)
-        else:
-            vs.plot_without_std(y_test_last, y_pred_last, 
+        save_file_name = save_file_name_prefix_1 + "test.pdf"
+        vs.plot_without_std(y_test_last, y_pred_last, 
                                 title="Prediction result",
                                 save_file_name = save_file_name)
         
